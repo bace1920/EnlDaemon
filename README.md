@@ -1,8 +1,8 @@
 # PrcessDaemon
-A Daemon to keep your process alive.
+A Daemon to restart your process if it dead for any reason.
 
 ## Usage
-Run the program and it will creative a config file at work directory  
+Run the program and it will create a config file at work directory  
 Edit the config like this:  
 
     FlushTime(ms)
@@ -14,12 +14,14 @@ Edit the config like this:
 For example:  
 
     10000
-    yourProgeamName1.exe
-    "path\to\yourProgeamName1.exe" -m -n
+    yourProgramName1.exe
+    "path\to\yourProgramName1.exe" -m -n
     2
-    yourProgeamName2.exe
-    "path\to\yourProgeamName2.exe" -m
+    yourProgramName2.exe
+    "path\to\yourProgramName2.exe" -m
     1
+
+Than program will apply your changes automatically.
 
 Tips: Does not support inline note.
 ## License
