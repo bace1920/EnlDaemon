@@ -1,11 +1,10 @@
-#pragma region Includes
+#pragma once
 #include "DaemonService.h"
-#pragma endregion
 
 
 DaemonService::DaemonService(std::string Path){
-
-	WriteToLog("Init.");
+	
+	//WriteToLog("Initializing.", INFO);
 	this->Path = Path;
 	FlushTime = 5000;
 }
@@ -14,13 +13,35 @@ DaemonService::DaemonService(std::string Path){
 DaemonService::~DaemonService(void){
 }
 
-int DaemonService::WriteToLog(std::string str) {
-	std::fstream Log;
-	Log.open(Path+"DaemonService.log", std::ios::app);
-	if (!Log)
+int DaemonService::WriteToLog(char* Str, int LogType) {
+	std::fstream Log(Path + "DaemonService.log", std::ios::app);
+	
+	time_t now_time;
+	now_time = time(NULL);
+	tm* t = localtime(&now_time);
+
+	char Time[30];
+	
+	if (Log.fail()) {
+		//std::cout << "No Log" << std::endl;
 		return -1;
-	Log << str;
+	}
+	
+	sprintf(Time,"[%d-%02d-%02d %02d:%02d:%02d]",
+		t->tm_year + 1900,
+		t->tm_mon + 1,
+		t->tm_mday,
+		t->tm_hour,
+		t->tm_min,
+		t->tm_sec);
+
+	if (LogType >= INFO) {
+		//std::cout << Time << Str << std::endl;
+		Log << Time << Str << std::endl;
+	}
+		
 	Log.close();
+
 	return 0;
 }
 
@@ -36,7 +57,7 @@ void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
 		Config << "# example.exe" << std::endl;
 		Config << "# \"C:\\example.exe\" -m -n" << std::endl;
 		Config << "# 2" << std::endl;
-		WriteToLog("Config do not exit, generated a exapmle config.");
+		WriteToLog("Config do not exit, generated a exapmle config.", INFO);
 	} else {
 		// the first not empty line should be FlushTime
 		Config.getline(Str, COMMAND_SIZE);
@@ -77,7 +98,7 @@ int DaemonService::GetPrecessNum(char* ProcessName) {
 	HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
 	if (hProcessSnap == INVALID_HANDLE_VALUE) {
-		WriteToLog("Call CreateToolhelp32Snapshot failed!");
+		WriteToLog("Call CreateToolhelp32Snapshot failed!", ERR);
 	}
 
 	PROCESSENTRY32 pe32;
@@ -104,44 +125,32 @@ void DaemonService::ServiceWorkerThread(void)
 	// the limit have to me 2
 	// i dont know why
 	// else it should be 1
+
 	if (GetPrecessNum("ProcessDaemon.exe") > 2) {
-		LogStr = "There is a Daemon running, please close it first.";
-		LogStr += "\n";
-		WriteToLog(LogStr);
+		WriteToLog("There is a Daemon running, please close it first.", WARNING);
 		//std::cout << "There is a Daemon running, please close it first." << std::endl;
 		return;
 	}
-		
+	WriteToLog("Start service.", INFO);
 	std::vector<Process> ProcessList;
 	
 	// Periodically check if the service is stopping.
 	while (true) {
-
 		ReadConfig(ProcessList);
-
 		for (int i = 0; i < ProcessList.size(); i++) {
 			if (GetPrecessNum(ProcessList[i].ProcessName) > 0) {
-				LogStr = ProcessList[i].ProcessName;
-				LogStr += " is Alive";
-				LogStr += "\n";
-				WriteToLog(LogStr);
+				sprintf(LogStr, "%s is Alive", ProcessList[i].ProcessName);
+				WriteToLog(LogStr, DEBUG);
 				//std::cout << ProcessList[i].ProcessName << " is alive" << std::endl;
 				ProcessList[i].Alive = true;
 			}
 
 		}
 
-		//WriteToLog("Start the process in the monitoring list.");
 		for (int i = 0; i < ProcessList.size(); i++) {	
 			if (ProcessList[i].Alive == false) {
-				/*LogStr = "Auto restart dead process: ";
-				LogStr += ProcessList[i].ProcessStartCommand;
-				LogStr += "\n";
-				WriteToLog(LogStr);
-				LogStr = ProcessList[i].ProcessStartCommand;
-				WriteToLog(LogStr);
-				LogStr = "\n";
-				WriteToLog(LogStr);*/
+				sprintf(LogStr, "Auto restart dead process: %s", ProcessList[i].ProcessStartCommand);
+				WriteToLog(LogStr, DEBUG);
 				//std::cout << ProcessList[i].ProcessStartCommand << std::endl;
 				WinExec(ProcessList[i].ProcessStartCommand, ProcessList[i].Argc);
 			}
