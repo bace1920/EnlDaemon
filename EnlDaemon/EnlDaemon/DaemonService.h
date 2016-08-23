@@ -7,9 +7,14 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <ctime>
 
 const int NAME_SIZE = 50;	//size of process name
 const int COMMAND_SIZE = 200;	//size of prcessStartCommand, also be used when read file - to be the size of line 
+const int DEBUG = 0xFFFFFFFC;
+const int INFO = 0xFFFFFFFD;
+const int WARNING = 0xFFFFFFFE;
+const int ERR = 0xFFFFFFFF;
 
 //
 //   STRUCT: Process
@@ -36,9 +41,9 @@ public:
 
 private:
 	std::string Path;
-	std::string LogStr;
+	char LogStr[1005];
 	int FlushTime;
-	int WriteToLog(std::string str);
+	int WriteToLog(char* Str = "", int LogType = INFO);
 	int GetPrecessNum(char* ProcessName);
 	void ReadConfig(std::vector<Process>& ProcessList);
 };

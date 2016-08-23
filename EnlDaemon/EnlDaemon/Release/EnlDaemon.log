@@ -1,10 +1,10 @@
 ﻿  DaemonService.cpp
-DaemonService.cpp(122): warning C4018: '<': signed/unsigned mismatch
-DaemonService.cpp(135): warning C4018: '<': signed/unsigned mismatch
+DaemonService.cpp(140): warning C4018: '<': signed/unsigned mismatch
+DaemonService.cpp(150): warning C4018: '<': signed/unsigned mismatch
   Generating code
-  1 of 274 functions ( 0.4%) were compiled, the rest were copied from previous compilation.
+  2 of 561 functions ( 0.4%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    31 functions had inline decision re-evaluated but remain unchanged
+    3 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   EnlDaemon.vcxproj -> G:\OneDrive\Github\EnlDaemon\EnlDaemon\Release\EnlDaemon.exe
   EnlDaemon.vcxproj -> G:\OneDrive\Github\EnlDaemon\EnlDaemon\Release\EnlDaemon.pdb (Full PDB)
