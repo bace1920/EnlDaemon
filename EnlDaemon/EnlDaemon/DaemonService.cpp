@@ -13,7 +13,7 @@ DaemonService::DaemonService(std::string Path){
 DaemonService::~DaemonService(void){
 }
 
-int DaemonService::WriteToLog(char* Str, int LogType) {
+inline int DaemonService::WriteToLog(char* Str, int LogType) {
 	std::fstream Log(Path + "DaemonService.log", std::ios::app);
 	
 	time_t now_time;
@@ -45,7 +45,7 @@ int DaemonService::WriteToLog(char* Str, int LogType) {
 	return 0;
 }
 
-void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
+inline void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
 	Process Temp;
 	ProcessList.clear();
 	std::fstream Config;
@@ -57,13 +57,13 @@ void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
 		Config << "# example.exe" << std::endl;
 		Config << "# \"C:\\example.exe\" -m -n" << std::endl;
 		Config << "# 2" << std::endl;
+		Config << "# 1" << std::endl;
 		WriteToLog("Config do not exit, generated a exapmle config.", INFO);
 	} else {
 		// the first not empty line should be FlushTime
 		Config.getline(Str, COMMAND_SIZE);
 		std::stringstream ToInt(Str);
 		ToInt >> FlushTime;
-		//std::cout << FlushTime<< std::endl;
 		// read process info from conifg
 		while (Config.getline(Str, COMMAND_SIZE)) {
 			// check if this line is empty or its Note
@@ -72,18 +72,20 @@ void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
 				strcpy(Temp.ProcessName, Str);
 				// Then the next line should be ProcessStartCommand
 				Config.getline(Str, COMMAND_SIZE);
-				// wrapped the command with double quotes to avoid error when space in command
 				strcpy(Temp.ProcessStartCommand, Str);
-				/*strcat(Temp.ProcessStartCommand, Str);
-				strcat(Temp.ProcessStartCommand, "\"");*/
-				Config.getline(Str, COMMAND_SIZE);
 				//Then the next line should be number of arguments
+				Config.getline(Str, COMMAND_SIZE);			
 				ToInt.clear();
 				ToInt.str(Str);
 				ToInt >> Temp.Argc;
-				//std::cout << Str<<" "<<Temp.Argc << std::endl;
-				// save the info to a list
+				Config.getline(Str, COMMAND_SIZE);
+				//Then the next line should be number of max process number
+				ToInt.clear();
+				ToInt.str(Str);
+				ToInt >> Temp.MaxProcess;
+				
 				Temp.Alive = false;
+				// save the info to a list
 				ProcessList.push_back(Temp);
 			}
 		}
@@ -93,7 +95,7 @@ void DaemonService::ReadConfig(std::vector<Process>& ProcessList) {
 	return;
 }
 
-int DaemonService::GetPrecessNum(char* ProcessName) {
+inline int DaemonService::GetPrecessNum(char* ProcessName) {
 	int ProcessCount = 0;
 	HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
@@ -114,19 +116,47 @@ int DaemonService::GetPrecessNum(char* ProcessName) {
 	}
 	CloseHandle(hProcessSnap);
 
-	//std::cout << ProcessName << " " << ProcessCount << std::endl;
-	return ProcessCount;
+	// even there is only one process, it will still find a same name process with pid=1
+	// but if there is no process running, it can get 0 correct
+	// its for some reason by windows system kernel
+	// so we just do this to get really process number
+	return ProcessCount > 0 ? ProcessCount - 1 : ProcessCount;
 }
 
+inline int DaemonService::KillProcess(char* ProcessName) {
+	int ProcessCount = 0;
+	HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	HANDLE explorer;
+
+	if (hProcessSnap == INVALID_HANDLE_VALUE) {
+		WriteToLog("Call CreateToolhelp32Snapshot failed!", ERR);
+	}
+
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+
+	BOOL bMore = Process32First(hProcessSnap, &pe32);
+
+	while (bMore) {
+		bMore = Process32Next(hProcessSnap, &pe32);
+		if (strcmp((char*)pe32.szExeFile, ProcessName) == 0) {
+			ProcessCount++;
+			explorer = OpenProcess(PROCESS_ALL_ACCESS, false, pe32.th32ProcessID);
+			TerminateProcess(explorer, 1);
+		}
+	}
+	CloseHandle(hProcessSnap);
+
+	// even there is only one process, it will still find a same name process with pid=1
+	// but if there is no process running, it can get 0 correct
+	// its for some reason by windows system kernel
+	// so we just do this to get really process number
+	return ProcessCount > 0 ? ProcessCount - 1 : ProcessCount;
+}
 
 void DaemonService::ServiceWorkerThread(void)
 {
-	// if use #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
-	// the limit have to me 2
-	// i dont know why
-	// else it should be 1
-
-	if (GetPrecessNum("ProcessDaemon.exe") > 2) {
+	if (GetPrecessNum("ProcessDaemon.exe") > 1) {
 		WriteToLog("There is a Daemon running, please close it first.", WARNING);
 		//std::cout << "There is a Daemon running, please close it first." << std::endl;
 		return;
@@ -138,12 +168,15 @@ void DaemonService::ServiceWorkerThread(void)
 	while (true) {
 		ReadConfig(ProcessList);
 		for (int i = 0; i < ProcessList.size(); i++) {
-			if (GetPrecessNum(ProcessList[i].ProcessName) > 0) {
+			int ProcessNum = GetPrecessNum(ProcessList[i].ProcessName);
+			//std::cout << ProcessNum << std::endl;
+			if (ProcessNum <= ProcessList[i].MaxProcess&&ProcessNum > 0) {
 				sprintf(LogStr, "%s is Alive", ProcessList[i].ProcessName);
 				WriteToLog(LogStr, DEBUG);
 				//std::cout << ProcessList[i].ProcessName << " is alive" << std::endl;
 				ProcessList[i].Alive = true;
-			}
+			} else if (ProcessNum > ProcessList[i].MaxProcess)
+				KillProcess(ProcessList[i].ProcessName);
 
 		}
 
@@ -152,7 +185,8 @@ void DaemonService::ServiceWorkerThread(void)
 				sprintf(LogStr, "Auto restart dead process: %s", ProcessList[i].ProcessStartCommand);
 				WriteToLog(LogStr, DEBUG);
 				//std::cout << ProcessList[i].ProcessStartCommand << std::endl;
-				WinExec(ProcessList[i].ProcessStartCommand, ProcessList[i].Argc);
+				for (int q = 0; q < ProcessList[i].MaxProcess; q++)
+					WinExec(ProcessList[i].ProcessStartCommand, ProcessList[i].Argc);
 			}
 		}
 

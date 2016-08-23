@@ -9,6 +9,7 @@ Edit the config like this:
     PrcessName
     ProcessStartCommand
     ProcessArgumentsNum
+    MaxProcessNumber
     # some note if you need
 
 For example:  
@@ -17,13 +18,18 @@ For example:
     yourProgramName1.exe
     "path\to\yourProgramName1.exe" -m -n
     2
+    2
     yourProgramName2.exe
     "path\to\yourProgramName2.exe" -m
+    1
     1
 
 Than program will apply your changes automatically.
 
-Tips: Does not support inline note.
+## Known problems
+ - Does not support inline note.
+ - Only support English directory
+
 ## License
 
 Open sourced under the [GPLv2](LICENSE).
