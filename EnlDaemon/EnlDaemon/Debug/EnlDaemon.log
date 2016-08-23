@@ -1,7 +1,9 @@
-﻿  main.cpp
-  DaemonService.cpp
-g:\onedrive\github\enldaemon\enldaemon\enldaemon\daemonservice.cpp(122): warning C4018: '<': signed/unsigned mismatch
-g:\onedrive\github\enldaemon\enldaemon\enldaemon\daemonservice.cpp(135): warning C4018: '<': signed/unsigned mismatch
+﻿  DaemonService.cpp
+g:\onedrive\github\enldaemon\enldaemon\enldaemon\daemonservice.cpp(143): warning C4018: '<': signed/unsigned mismatch
+g:\onedrive\github\enldaemon\enldaemon\enldaemon\daemonservice.cpp(154): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
+  Compiling...
+  main.cpp
   Generating Code...
   EnlDaemon.vcxproj -> G:\OneDrive\Github\EnlDaemon\EnlDaemon\Debug\EnlDaemon.exe
   EnlDaemon.vcxproj -> G:\OneDrive\Github\EnlDaemon\EnlDaemon\Debug\EnlDaemon.pdb (Partial PDB)

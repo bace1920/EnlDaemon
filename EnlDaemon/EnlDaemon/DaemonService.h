@@ -30,6 +30,7 @@ typedef struct {
 	char ProcessName[NAME_SIZE];
 	char ProcessStartCommand[COMMAND_SIZE];
 	int Argc;
+	int MaxProcess;
 	bool Alive;
 }Process;
 
@@ -43,7 +44,8 @@ private:
 	std::string Path;
 	char LogStr[1005];
 	int FlushTime;
-	int WriteToLog(char* Str = "", int LogType = INFO);
-	int GetPrecessNum(char* ProcessName);
-	void ReadConfig(std::vector<Process>& ProcessList);
+	inline int WriteToLog(char* Str = "", int LogType = INFO);
+	inline int GetPrecessNum(char* ProcessName);
+	inline int KillProcess(char* ProcessName);
+	inline void ReadConfig(std::vector<Process>& ProcessList);
 };
